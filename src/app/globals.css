@@ -2,45 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-/* โทนทั้งเว็บ */
-@layer base {
-  html,
-  body {
-    height: 100%;
-  }
+/* ทำให้ browser รู้ว่ามี 2 scheme */
+:root {
+  color-scheme: light dark;
+}
 
-  body {
-    @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+/* ===== Light ===== */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f8fafc;      /* slate-50 */
+    --card: #ffffff;
+    --text: #0f172a;    /* slate-900 */
+    --muted: #334155;   /* slate-700 */
+    --border: #cbd5e1;  /* slate-300 */
+    --input: #ffffff;
+    --placeholder: #64748b; /* slate-500 */
+    --btn: #0f172a;
+    --btnText: #ffffff;
   }
+}
 
-  /* หัวข้อ/label ไม่ให้จาง */
-  h1, h2, h3, label, p {
-    @apply text-slate-900 dark:text-slate-100;
+/* ===== Dark ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;      /* navy/dark */
+    --card: #0f172a;    /* slate-900 */
+    --text: #f1f5f9;    /* slate-100 */
+    --muted: #cbd5e1;   /* slate-300 */
+    --border: #334155;  /* slate-700 */
+    --input: #0b1220;
+    --placeholder: #94a3b8; /* slate-400 */
+    --btn: #f1f5f9;
+    --btnText: #0f172a;
   }
+}
 
-  /* form elements ให้อ่านง่าย */
-  input, textarea, select {
-    @apply w-full rounded-lg border px-4 py-3
-      bg-white text-slate-900 border-slate-300
-      dark:bg-slate-900 dark:text-slate-100 dark:border-slate-600
-      focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500;
-  }
+html, body { height: 100%; }
 
-  input::placeholder,
-  textarea::placeholder {
-    color: rgb(100 116 139); /* slate-500 */
-    opacity: 1;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+}
 
-  @media (prefers-color-scheme: dark) {
-    input::placeholder,
-    textarea::placeholder {
-      color: rgb(203 213 225); /* slate-300 */
-      opacity: 1;
-    }
-  }
+/* card/panel ที่ใช้ bg-white / border เดิม */
+.bg-white { background: var(--card) !important; }
+.text-gray-900, .text-black { color: var(--text) !important; }
+.text-gray-700, .text-gray-600 { color: var(--muted) !important; }
 
-  button {
-    @apply rounded-lg px-4 py-3;
-  }
+.border, .border-gray-200, .border-gray-300 {
+  border-color: var(--border) !important;
+}
+
+/* input/select/textarea ให้ชัด */
+input, textarea, select {
+  background: var(--input) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder) !important;
+  opacity: 1;
+}
+
+/* ปุ่มดำเดิม */
+.bg-black {
+  background: var(--btn) !important;
+}
+.bg-black.text-white,
+.bg-black .text-white {
+  color: var(--btnText) !important;
 }
