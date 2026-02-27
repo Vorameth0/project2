@@ -1,7 +1,11 @@
 OEM Stock
 
-Voramet Borvornsirisan
+Voramet Borvornsirisan 
+
+
 Vorameth Laorrattanasak
+
+
 Nonthapat Chintawutiphong
 
 Project-2 is a full-stack OEM marketplace web application built with Next.js and MongoDB. The platform supports role-based access for Admin, Supplier, and Customer users. Customers can create OEM requests, suppliers can submit quotations, and admins can manage and verify suppliers. The system includes authentication, quotation management, and real-time interaction features, providing a complete B2B workflow solution.
