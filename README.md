@@ -12,15 +12,15 @@ Project-2 is a full-stack OEM marketplace web application built with Next.js and
 
 
 supplier1@test.com
-1234
+pass : 1234
 
 
 customer1@test.com
-1234
+pass : 1234
 
 
 ad@test.com
-1234
+pass : 1234
 
 
 <img width="1694" height="1063" alt="Screenshot 2026-02-27 at 10 55 52 PM" src="https://github.com/user-attachments/assets/67995930-8f3c-466f-8864-b5ff1c5bff81" />
