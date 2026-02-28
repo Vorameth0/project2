@@ -26,9 +26,6 @@ export async function PATCH(req, ctx) {
   const { status } = body;
   if (!["accepted", "rejected", "pending"].includes(status)) return badRequest("Invalid status");
 
-  const role = session.user.role;
-  const userId = session.user.id;
-
   await dbConnect();
 
   const quote = await Quote.findById(id);
@@ -37,14 +34,7 @@ export async function PATCH(req, ctx) {
   const oem = await OEMRequest.findById(quote.oemRequestId).lean();
   if (!oem) return NextResponse.json({ error: "OEM request not found" }, { status: 404 });
 
-  // สิทธิ์ตัดสินใจ: customer(เจ้าของงาน) หรือ admin เท่านั้น
-  if (role === "customer" && String(oem.createdBy) !== String(userId)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  if (role !== "customer" && role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+  // ✅ แก้เฉพาะตรงนี้: ให้ "ทุกคนที่ล็อกอิน" กด accept/reject ได้
   quote.status = status;
   await quote.save();
 

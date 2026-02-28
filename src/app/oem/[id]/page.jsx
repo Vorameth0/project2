@@ -1,3 +1,4 @@
+// /Users/voramethlaorrattanasak/project_2/src/app/oem/[id]/page.jsx
 "use client";
 
 import React from "react";
@@ -16,7 +17,7 @@ function QuotesBox({ oemRequestId }) {
 
   // ใช้ flags จากผลลัพธ์จริง (ไม่พึ่ง session provider)
   const [canCreate, setCanCreate] = React.useState(true); // ถ้าโดน 403 ค่อยปิด
-  const [canDecide, setCanDecide] = React.useState(true); // ถ้าโดน 403 ค่อยปิด
+  const [canDecide, setCanDecide] = React.useState(true); // (ยังเก็บไว้ เผื่อแสดง error)
 
   async function load() {
     if (!oemRequestId) return;
@@ -106,12 +107,13 @@ function QuotesBox({ oemRequestId }) {
       }
 
       setCanDecide(true);
-      await load();
+      await load(); // ✅ กดแล้วรีเฟรช ทำให้ทุกคนเห็น status ล่าสุด
     } catch (e) {
       setErr(e.message);
     }
   }
 
+  // (ยังเก็บไว้ แต่เราไม่โชว์ปุ่ม Delete แล้ว ตามที่ขอ)
   async function removeQuote(id) {
     if (!confirm("Delete this quote?")) return;
 
@@ -188,39 +190,36 @@ function QuotesBox({ oemRequestId }) {
                     {q.status}
                   </span>
                 </div>
+
+                {/* ✅ แก้ตามที่ขอ: ไม่โชว์คำว่า Supplier: แล้ว */}
                 <div className="text-sm text-white/70 mt-1">
-                  Supplier: {q?.supplier?.name || "unknown"} ({q?.supplier?.email || "-"})
+                  {q?.supplier?.name || "unknown"} ({q?.supplier?.email || "-"})
                 </div>
+
                 {q.note ? <div className="text-sm mt-2">{q.note}</div> : null}
                 <div className="text-xs text-white/50 mt-2">
                   {new Date(q.createdAt).toLocaleString()}
                 </div>
               </div>
 
+              {/* ✅ แก้ตามที่ขอ: เอาแค่ปุ่ม Accept/Reject (ไม่ต้องมี Delete) */}
               <div className="flex flex-col gap-2 items-end">
-                {canDecide && (
-                  <div className="flex gap-2">
-                    <button
-                      className="rounded-2xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-                      onClick={() => setStatus(q._id, "accepted")}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      className="rounded-2xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-                      onClick={() => setStatus(q._id, "rejected")}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <button
+                    className="rounded-2xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+                    onClick={() => setStatus(q._id, "accepted")}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    className="rounded-2xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+                    onClick={() => setStatus(q._id, "rejected")}
+                  >
+                    Reject
+                  </button>
+                </div>
 
-                <button
-                  className="rounded-2xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-                  onClick={() => removeQuote(q._id)}
-                >
-                  Delete
-                </button>
+                {/* (ปุ่ม Delete ถูกถอดออกตามคำขอ) */}
               </div>
             </div>
           </div>
@@ -236,9 +235,6 @@ function ChatBox({ oemRequestId, adminId }) {
   const [err, setErr] = React.useState("");
   const [loading, setLoading] = React.useState(true);
 
-  // ✅ เพิ่ม: map userId -> role เพื่อโชว์ว่าใครพิมพ์ (admin/supplier/customer)
-  const [roleByUserId, setRoleByUserId] = React.useState({});
-
   async function load() {
     if (!oemRequestId) return;
 
@@ -250,25 +246,7 @@ function ChatBox({ oemRequestId, adminId }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `GET ${res.status}`);
-
-      const list = data.items || [];
-      setItems(list);
-
-      // ✅ เพิ่ม: สร้าง map role จากข้อมูลใน message ที่ populate มา (ถ้ามี)
-      // ถ้า API ไม่ populate ก็จะ fallback เป็น "You"
-      const map = {};
-      for (const m of list) {
-        const fromObj = m?.from;
-        // รองรับทั้งแบบ populate (object) และแบบ id string
-        const fromId =
-          typeof fromObj === "object" && fromObj?._id ? String(fromObj._id) : String(m.from);
-
-        const role =
-          typeof fromObj === "object" && fromObj?.role ? String(fromObj.role) : "";
-
-        if (fromId && role) map[fromId] = role;
-      }
-      setRoleByUserId(map);
+      setItems(data.items || []);
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -306,24 +284,6 @@ function ChatBox({ oemRequestId, adminId }) {
     }
   }
 
-  // ✅ helper: เปลี่ยน role เป็น label ที่อยากให้แสดง
-  function whoLabel(m) {
-    const fromObj = m?.from;
-    const fromId =
-      typeof fromObj === "object" && fromObj?._id ? String(fromObj._id) : String(m.from);
-
-    // ถ้าเป็น adminId ก็ให้ขึ้น admin ชัวร์
-    if (String(fromId) === String(adminId)) return "admin";
-
-    const role = roleByUserId[fromId];
-    if (role === "customer") return "customer";
-    if (role === "supplier") return "supplier";
-    if (role === "admin") return "admin";
-
-    // fallback เดิม
-    return "You";
-  }
-
   return (
     <div className="bg-[#0b1b3a] text-white rounded-3xl shadow-xl p-6">
       <div className="flex items-center justify-between mb-3">
@@ -343,8 +303,8 @@ function ChatBox({ oemRequestId, adminId }) {
         {items.map((m) => (
           <div key={m._id} className="text-sm">
             <div className="text-white/50">
-              {/* ✅ แก้ตรงนี้เท่านั้น: โชว์ว่าใครพิมพ์ (admin/supplier/customer) */}
-              {whoLabel(m)} • {new Date(m.createdAt).toLocaleString()}
+              {String(m.from) === String(adminId) ? "Admin" : "You"} •{" "}
+              {new Date(m.createdAt).toLocaleString()}
             </div>
             <div>{m.text}</div>
           </div>
@@ -396,7 +356,6 @@ export default function OEMDetailPage() {
     })();
   }, [id]);
 
-  // เดิม: cancel() ลบงาน
   async function cancel() {
     if (!id) return;
     if (!confirm("Delete this request?")) return;
@@ -466,7 +425,9 @@ export default function OEMDetailPage() {
                   <div className="text-sm">deadline: {fmtDate(reqItem.deadline)}</div>
                 ) : null}
 
-                {reqItem.status ? <div className="text-sm">status: {reqItem.status}</div> : null}
+                {reqItem.status ? (
+                  <div className="text-sm">status: {reqItem.status}</div>
+                ) : null}
 
                 {reqItem.createdAt ? (
                   <div className="text-sm">created: {fmtDate(reqItem.createdAt)}</div>

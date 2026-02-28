@@ -1,3 +1,4 @@
+// /Users/voramethlaorrattanasak/project_2/src/app/api/messages/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
@@ -6,7 +7,6 @@ import dbConnect from "@/lib/dbConnect";
 import { authOptions } from "@/lib/auth";
 import Message from "@/models/Message";
 import OEMRequest from "@/models/OEMRequest";
-import Quote from "@/models/Quote"; // ✅ แก้ให้ใช้ model เดียวกับ /api/quotes
 import User from "@/models/User";
 
 function badRequest(msg) {
@@ -37,7 +37,7 @@ export async function GET(req) {
   const role = session.user.role;
   const userId = String(session.user.id);
 
-  // customer/admin ดูได้
+  // ✅ customer/admin ดูได้เหมือนเดิม
   if (role === "admin") {
     // ok
   } else if (role === "customer") {
@@ -45,12 +45,10 @@ export async function GET(req) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   } else if (role === "supplier") {
-    // supplier ดูได้เฉพาะงานที่ "มี quote ของตัวเอง"
-    const hasQuote = await Quote.exists({
-      oemRequestId: new mongoose.Types.ObjectId(oemRequestId), // ✅ cast
-      supplier: new mongoose.Types.ObjectId(userId), // ✅ cast
-    });
-    if (!hasQuote) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // ✅ supplier ดู chat ได้ ถ้างานยัง open/negotiating
+    if (!["open", "negotiating"].includes(String(oem.status))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   } else {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -87,29 +85,29 @@ export async function POST(req) {
   const adminId = await getAdminId();
   if (!adminId) return NextResponse.json({ error: "Admin user not found" }, { status: 500 });
 
-  // ----- เดา to ตาม role -----
   let toId = "";
 
   if (role === "customer") {
-    // ต้องเป็นเจ้าของงานเท่านั้น
     if (fromId !== ownerId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     toId = adminId;
+
   } else if (role === "admin") {
-    // admin ส่งหา owner (customer)
     toId = ownerId;
+
   } else if (role === "supplier") {
-    // supplier ส่งหา admin ได้ แต่ต้องเป็น supplier ที่เกี่ยวข้องกับงานนี้ (มี quote)
-    const hasQuote = await Quote.exists({
-      oemRequestId: new mongoose.Types.ObjectId(oemRequestId), // ✅ cast
-      supplier: new mongoose.Types.ObjectId(fromId), // ✅ cast
-    });
-    if (!hasQuote) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // ✅ supplier ส่งหา admin ได้ ถ้างาน open/negotiating
+    if (!["open", "negotiating"].includes(String(oem.status))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     toId = adminId;
+
   } else {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (toId === fromId) return badRequest("to cannot be yourself");
+  // ✅ แก้ “2 อันนี้”: อนุญาตให้ส่งหาตัวเองได้ทุก role
+  // (ไม่ไปแตะกฎสิทธิ์อื่น และไม่กระทบ flow ปกติ)
+  // เดิมเคยกันไว้ด้วย: if (toId === fromId) return badRequest("to cannot be yourself");
 
   const doc = await Message.create({
     oemRequestId,
