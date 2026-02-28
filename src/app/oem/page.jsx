@@ -1,48 +1,79 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function OEMListPage() {
   const [items, setItems] = useState([]);
-  const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
   async function load() {
-    setErr("");
+    setLoading(true); // ✅ เพิ่ม: กัน refresh แล้ว loading ไม่ขึ้น
     try {
+      setErr("");
       const res = await fetch("/api/oem-requests", { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `GET ${res.status}`);
-      setItems(data?.items || []);
+      if (!res.ok) throw new Error(data?.error || "Failed to load");
+      setItems(Array.isArray(data) ? data : data.items || []);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(String(e?.message || e)); // ✅ เพิ่ม: กัน e.message พัง
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">OEM Requests</h1>
-          <a className="rounded-xl bg-black px-4 py-2 text-white" href="/oem/create">Create</a>
+    <div className="min-h-screen bg-gray-100 p-6 flex justify-center">
+      <div className="w-full max-w-4xl bg-[#0b1b3a] text-white rounded-3xl shadow-xl p-8">
+        {/* 🔙 ปุ่มย้อนกลับ */}
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200 transition"
+          >
+            ← Back to Dashboard
+          </Link>
         </div>
 
-        {loading && <p className="mt-4 text-sm text-gray-600">Loading...</p>}
-        {err && <p className="mt-4 text-sm text-red-600">{err}</p>}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">OEM Requests</h1>
 
-        <div className="mt-5 space-y-3">
-          {items.map((it) => (
-            <a key={it._id} href={`/oem/${it._id}`} className="block rounded-xl border p-4 hover:bg-gray-50 dark:hover:bg-slate-800">
-              <div className="flex items-center justify-between">
-                <div className="font-medium">{it.title}</div>
-                <span className="text-xs rounded-full border px-2 py-1">{it.status}</span>
+          <Link
+            href="/oem/create"
+            className="bg-white text-black px-5 py-2 rounded-full hover:bg-gray-200 transition"
+          >
+            Create
+          </Link>
+        </div>
+
+        {loading && <p>Loading...</p>}
+        {err && <p className="text-red-400">{err}</p>}
+
+        <div className="space-y-4">
+          {items.map((item) => (
+            <div
+              key={item._id}
+              className="border border-white/20 rounded-2xl p-6 flex justify-between items-center hover:bg-white/5 transition"
+            >
+              <div>
+                <h2 className="text-xl font-semibold">{item.title}</h2>
+                <p className="text-gray-300">
+                  {item.price} • qty {item.quantity}
+                </p>
               </div>
-              <div className="mt-1 text-sm text-gray-600">{it.category} • qty {it.quantity}</div>
-            </a>
+
+              <Link
+                href={`/oem/${item._id}`}
+                className="border border-white/30 px-4 py-1 rounded-full hover:bg-white/10 transition"
+              >
+                open
+              </Link>
+            </div>
           ))}
         </div>
       </div>
