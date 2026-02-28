@@ -11,18 +11,6 @@ Nonthapat Chintawutiphong
 Project-2 is a full-stack OEM marketplace web application built with Next.js and MongoDB. The platform supports role-based access for Admin, Supplier, and Customer users. Customers can create OEM requests, suppliers can submit quotations, and admins can manage and verify suppliers. The system includes authentication, quotation management, and real-time interaction features, providing a complete B2B workflow solution.
 
 
-supplier1@test.com
-pass : 1234
-
-
-customer1@test.com
-pass : 1234
-
-
-ad@test.com
-pass : 1234
-
-
 <img width="1694" height="1063" alt="Screenshot 2026-02-27 at 10 55 52 PM" src="https://github.com/user-attachments/assets/67995930-8f3c-466f-8864-b5ff1c5bff81" />
 
 <img width="1683" height="1027" alt="Screenshot 2026-02-27 at 10 56 24 PM" src="https://github.com/user-attachments/assets/367f4f66-ed66-4bce-b80b-eea7ff63c351" />
