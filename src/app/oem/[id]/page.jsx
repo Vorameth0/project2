@@ -236,6 +236,9 @@ function ChatBox({ oemRequestId, adminId }) {
   const [err, setErr] = React.useState("");
   const [loading, setLoading] = React.useState(true);
 
+  // ✅ เพิ่ม: map userId -> role เพื่อโชว์ว่าใครพิมพ์ (admin/supplier/customer)
+  const [roleByUserId, setRoleByUserId] = React.useState({});
+
   async function load() {
     if (!oemRequestId) return;
 
@@ -247,7 +250,25 @@ function ChatBox({ oemRequestId, adminId }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `GET ${res.status}`);
-      setItems(data.items || []);
+
+      const list = data.items || [];
+      setItems(list);
+
+      // ✅ เพิ่ม: สร้าง map role จากข้อมูลใน message ที่ populate มา (ถ้ามี)
+      // ถ้า API ไม่ populate ก็จะ fallback เป็น "You"
+      const map = {};
+      for (const m of list) {
+        const fromObj = m?.from;
+        // รองรับทั้งแบบ populate (object) และแบบ id string
+        const fromId =
+          typeof fromObj === "object" && fromObj?._id ? String(fromObj._id) : String(m.from);
+
+        const role =
+          typeof fromObj === "object" && fromObj?.role ? String(fromObj.role) : "";
+
+        if (fromId && role) map[fromId] = role;
+      }
+      setRoleByUserId(map);
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -285,6 +306,24 @@ function ChatBox({ oemRequestId, adminId }) {
     }
   }
 
+  // ✅ helper: เปลี่ยน role เป็น label ที่อยากให้แสดง
+  function whoLabel(m) {
+    const fromObj = m?.from;
+    const fromId =
+      typeof fromObj === "object" && fromObj?._id ? String(fromObj._id) : String(m.from);
+
+    // ถ้าเป็น adminId ก็ให้ขึ้น admin ชัวร์
+    if (String(fromId) === String(adminId)) return "admin";
+
+    const role = roleByUserId[fromId];
+    if (role === "customer") return "customer";
+    if (role === "supplier") return "supplier";
+    if (role === "admin") return "admin";
+
+    // fallback เดิม
+    return "You";
+  }
+
   return (
     <div className="bg-[#0b1b3a] text-white rounded-3xl shadow-xl p-6">
       <div className="flex items-center justify-between mb-3">
@@ -304,8 +343,8 @@ function ChatBox({ oemRequestId, adminId }) {
         {items.map((m) => (
           <div key={m._id} className="text-sm">
             <div className="text-white/50">
-              {String(m.from) === String(adminId) ? "Admin" : "You"} •{" "}
-              {new Date(m.createdAt).toLocaleString()}
+              {/* ✅ แก้ตรงนี้เท่านั้น: โชว์ว่าใครพิมพ์ (admin/supplier/customer) */}
+              {whoLabel(m)} • {new Date(m.createdAt).toLocaleString()}
             </div>
             <div>{m.text}</div>
           </div>
@@ -358,7 +397,6 @@ export default function OEMDetailPage() {
   }, [id]);
 
   // เดิม: cancel() ลบงาน
-  // ✅ แก้แค่นี้: ลบแล้วกลับไป /oem และ refresh ให้ list หายชัวร์
   async function cancel() {
     if (!id) return;
     if (!confirm("Delete this request?")) return;
@@ -377,7 +415,6 @@ export default function OEMDetailPage() {
   if (!id) return null;
   if (!reqItem) return <div className="p-6">Loading...</div>;
 
-  // helper สำหรับโชว์ข้อมูล ถ้ามี
   const fmtDate = (v) => {
     try {
       return v ? new Date(v).toLocaleString() : "-";
@@ -400,13 +437,11 @@ export default function OEMDetailPage() {
 
         {err && <div className="text-red-600">{err}</div>}
 
-        {/* ✅ ส่วนหัว: เพิ่มรายละเอียด */}
         <div className="w-full bg-[#0b1b3a] text-white rounded-3xl shadow-xl p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold">{reqItem.title}</h1>
 
-              {/* details เพิ่ม: โชว์เท่าที่มี field */}
               <div className="mt-3 space-y-1 text-white/70">
                 {reqItem.specifications ? (
                   <div className="text-sm text-white/80">{reqItem.specifications}</div>
@@ -431,9 +466,7 @@ export default function OEMDetailPage() {
                   <div className="text-sm">deadline: {fmtDate(reqItem.deadline)}</div>
                 ) : null}
 
-                {reqItem.status ? (
-                  <div className="text-sm">status: {reqItem.status}</div>
-                ) : null}
+                {reqItem.status ? <div className="text-sm">status: {reqItem.status}</div> : null}
 
                 {reqItem.createdAt ? (
                   <div className="text-sm">created: {fmtDate(reqItem.createdAt)}</div>
@@ -441,13 +474,14 @@ export default function OEMDetailPage() {
               </div>
             </div>
 
-            {/* ปุ่มด้านขวา */}
             <div className="flex gap-2">
-              <Link className="bg-white text-black px-5 py-2 rounded-full hover:bg-gray-200 transition" href={`/oem/${id}/edit`}>
+              <Link
+                className="bg-white text-black px-5 py-2 rounded-full hover:bg-gray-200 transition"
+                href={`/oem/${id}/edit`}
+              >
                 Edit
               </Link>
 
-              {/* ✅ เพิ่มปุ่ม Delete */}
               <button
                 className="border border-white/30 px-5 py-2 rounded-full hover:bg-white/10 transition"
                 onClick={cancel}
